@@ -1,0 +1,15 @@
+export const QUERY_KEYS = {
+  DASHBOARD: ['dashboard'] as const,
+  MEMBRES: (page?: number) => ['membres', page] as const,
+  MEMBRE: (id: number) => ['membres', id] as const,
+  PAIEMENTS: (page?: number) => ['paiements', page] as const,
+  PAIEMENT: (id: number) => ['paiements', id] as const,
+  DEPENSES: (page?: number) => ['depenses', page] as const,
+  DEPENSE: (id: number) => ['depenses', id] as const,
+  RAPPORTS: (page?: number) => ['rapports', page] as const,
+  RAPPORT: (id: number) => ['rapports', id] as const,
+  PARAMETRES: ['parametres'] as const,
+  LOGS: (page?: number) => ['logs', page] as const,
+  ARRIERES: ['arrieres'] as const,
+  ME: ['me'] as const,
+};
