@@ -1,9 +1,9 @@
+import { PermissionGuard } from '@/components/guards/PermissionGuard';
+import { ROLES } from '@/constants/roles';
+import { ROUTES } from '@/constants/routes';
+import { cn } from '@/lib/utils';
 import { CreditCard, FileText, LayoutDashboard, TrendingDown, User } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
-import { PermissionGuard } from '@/components/guards/PermissionGuard';
-import { ROUTES } from '@/constants/routes';
-import { ROLES } from '@/constants/roles';
-import { cn } from '@/lib/utils';
 
 const itemClass = ({ isActive }: { isActive: boolean }) =>
   cn(
@@ -27,10 +27,12 @@ export const BottomNav = () => (
         Dépenses
       </NavLink>
     </PermissionGuard>
+    <PermissionGuard allowedRoles={[ROLES.PR, ROLES.TR, ROLES.AD]}>
     <NavLink to={ROUTES.RAPPORTS} className={itemClass}>
       <FileText className="h-5 w-5" />
       Rapports
     </NavLink>
+    </PermissionGuard>
     <NavLink to={ROUTES.PROFIL} className={itemClass}>
       <User className="h-5 w-5" />
       Profil
