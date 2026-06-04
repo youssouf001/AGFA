@@ -1,7 +1,7 @@
-import { Navigate, Outlet } from 'react-router-dom';
+import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { ROUTES } from '@/constants/routes';
 import { useAuth } from '@/hooks/useAuth';
-import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
+import { Navigate, Outlet } from 'react-router-dom';
 
 export const AuthLayout = () => {
   const { isAuthenticated, isLoading } = useAuth();
@@ -10,7 +10,7 @@ export const AuthLayout = () => {
   if (isAuthenticated) return <Navigate to={ROUTES.DASHBOARD} replace />;
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary-900 via-primary-700 to-primary-500 p-4">
+    <div className="flex min-h-screen items-center justify-center bg-[#0A192F] p-4">
       <Outlet />
     </div>
   );
