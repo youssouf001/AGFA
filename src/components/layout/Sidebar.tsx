@@ -1,3 +1,10 @@
+import { PermissionGuard } from '@/components/guards/PermissionGuard';
+import { Button } from '@/components/ui/button';
+import { ROLES } from '@/constants/roles';
+import { ROUTES } from '@/constants/routes';
+import { useAuth } from '@/hooks/useAuth';
+import { useParametres } from '@/hooks/useParametres';
+import { cn } from '@/lib/utils';
 import {
   Activity,
   AlertTriangle,
@@ -11,12 +18,6 @@ import {
   Users,
 } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { PermissionGuard } from '@/components/guards/PermissionGuard';
-import { Button } from '@/components/ui/button';
-import { ROUTES } from '@/constants/routes';
-import { ROLES } from '@/constants/roles';
-import { useAuth } from '@/hooks/useAuth';
-import { cn } from '@/lib/utils';
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   cn(
@@ -27,6 +28,7 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
 export const Sidebar = () => {
   const { logout } = useAuth();
   const navigate = useNavigate();
+  const { data: parametres } = useParametres();
 
   const handleLogout = () => {
     logout();
@@ -37,7 +39,7 @@ export const Sidebar = () => {
     <aside className="flex h-full w-64 flex-col border-r bg-card">
       <div className="p-6">
         <h2 className="text-xl font-bold text-primary-900">AGFA</h2>
-        <p className="text-xs text-muted-foreground">CERTT-UADB</p>
+        <p className="text-xs text-muted-foreground">{parametres?.nom_amicale ?? 'Amicale'}</p>
       </div>
       <nav className="flex-1 space-y-1 px-3">
         <NavLink to={ROUTES.DASHBOARD} className={navLinkClass} end>

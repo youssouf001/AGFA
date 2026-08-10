@@ -1,11 +1,13 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { QUERY_KEYS } from '@/constants/queryKeys';
 import { paiementService } from '@/services/paiementService';
 import type {
+  PaginationResponse,
+  Paiement,
   PaiementEspecesPayload,
   PaiementUpdatePayload,
   PaiementWaveInitPayload,
 } from '@/types';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 export const usePaiements = (page = 1, pageSize = 20) =>
   useQuery({
@@ -37,10 +39,26 @@ export const useUpdatePaiement = (id: number) => {
   return useMutation({
     mutationFn: (payload: PaiementUpdatePayload) =>
       paiementService.update(id, payload),
-    onSuccess: () => {
+    onSuccess: (updatedPaiement) => {
       void qc.invalidateQueries({ queryKey: QUERY_KEYS.PAIEMENT(id) });
       void qc.invalidateQueries({ queryKey: ['paiements'] });
       void qc.invalidateQueries({ queryKey: QUERY_KEYS.DASHBOARD });
+
+      void qc.setQueriesData<PaginationResponse<Paiement>>(
+        { queryKey: ['paiements'], exact: false },
+        (oldData) => {
+          if (!oldData) {
+            return oldData;
+          }
+
+          return {
+            ...oldData,
+            results: oldData.results.map((paiement) =>
+              paiement.id === updatedPaiement.id ? updatedPaiement : paiement,
+            ),
+          };
+        },
+      );
     },
   });
 };
