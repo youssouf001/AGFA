@@ -12,7 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useDashboard } from '@/hooks/useDashboard';
 import { usePaiements } from '@/hooks/usePaiements';
 import { useParametres } from '@/hooks/useParametres';
-import { formatMoisAnnee, formatMontantFCFA } from '@/utils/formatters';
+import { formatMoisAnnee } from '@/utils/formatters';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
@@ -262,7 +262,7 @@ export default function DashboardPage() {
                     <div key={p.label} className="px-3 py-3 flex flex-col items-center text-center">
                       <span className="text-[10px] text-muted-foreground font-medium">{p.label}</span>
                       <span className="text-[13px] font-semibold text-foreground mt-1 leading-tight">
-                        {formatMontantFCFA(p.value)}
+                        {(p.value)}
                       </span>
                     </div>
                   ))}

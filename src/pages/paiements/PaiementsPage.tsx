@@ -7,14 +7,20 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ROLES } from '@/constants/roles';
 import { ROUTES } from '@/constants/routes';
+import { useAuth } from '@/hooks/useAuth';
 import { useDeletePaiement, usePaiements, useUpdatePaiement } from '@/hooks/usePaiements';
 import type { Paiement } from '@/types';
 import { parseDRFError } from '@/utils/errorParser';
-import { formatDateTime, formatMoisAnnee, formatMontantFCFA } from '@/utils/formatters';
+import { formatDateTime, formatMoisAnnee } from '@/utils/formatters';
 import { AlertCircle, Calendar, CreditCard, Search, User } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
+
+// --- Fonctions utilitaires pour vÃ©rifier le statut ---
+const isPending = (status: string) => status === 'En attente';
+const isAccepted = (status: string) => status === 'Valide';
+const isRefused = (status: string) => status === 'Rejeté'; 
 
 function ValidateButton({ id }: { id: number }) {
   const update = useUpdatePaiement(id);
@@ -39,22 +45,7 @@ function ValidateButton({ id }: { id: number }) {
   );
 }
 
-export default function PaiementsPage() {
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState('');
-  const pageSize = 20;
-  const { data, isLoading, isError, refetch } = usePaiements(page, pageSize);
-  const deletePaiement = useDeletePaiement();
-
-  const filtered = useMemo(() => {
-    const list = data?.results ?? [];
-    if (!search.trim()) return list;
-    const q = search.toLowerCase();
-    return list.filter((p) => p.membre.affichage.toLowerCase().includes(q));
-  }, [data, search]);
-
-  // Définition des colonnes pour le tableau Desktop
-  const columns: Column<Paiement>[] = [
+const baseColumns: Column<Paiement>[] = [
     { 
       key: 'membre', 
       header: 'Membre', 
@@ -63,7 +54,7 @@ export default function PaiementsPage() {
     { 
       key: 'montant', 
       header: 'Montant', 
-      cell: (r) => formatMontantFCFA(r.montant_fcfa),
+      cell: (r) => (r.montant_fcfa),
     },
     { 
       key: 'type', 
@@ -90,11 +81,52 @@ export default function PaiementsPage() {
       header: 'Date',
       cell: (r) => formatDateTime(r.date_enregistrement),
     },
-    {
-      key: 'actions',
-      header: 'Actions',
-      cell: (r) => (
-        <PermissionGuard allowedRoles={[ROLES.PR, ROLES.TR]}>
+  ];
+
+export default function PaiementsPage() {
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<'all' | 'En attente' | 'Valide' | 'Rejete'>("all");
+  const pageSize = 20;
+  const { data, isLoading, isError, refetch } = usePaiements(page, pageSize);
+  const deletePaiement = useDeletePaiement();
+  
+  const { user } = useAuth(); 
+  const isTrésorier = user?.role === ROLES.TR;
+
+  const allResult  = data?.results ?? [];
+  const counts = {
+    all : allResult.length,
+    'En attente' : allResult.filter((p) => isPending(p.statut)).length,
+    'Valide' : allResult.filter((p) => isAccepted(p.statut)).length,
+    'Rejete' : allResult.filter((p) => isRefused(p.statut)).length,
+  }
+
+  const filtered = useMemo(() =>{
+    let list = allResult;
+
+    if (filter !== 'all') {
+      if (filter === 'En attente') list = list.filter((p) => isPending(p.statut));
+      if (filter === 'Valide') list = list.filter((p) => isAccepted(p.statut));
+      if (filter === 'Rejete') list = list.filter((p) => isRefused(p.statut));
+    }
+
+    if(search.trim()){
+      const q = search.toLocaleLowerCase();
+      list = list.filter((p) => 
+      p.membre.affichage.toLocaleLowerCase().includes(q));
+    }
+
+    return list;
+  }, [allResult, search, filter]);
+
+  const columns = useMemo(() => {
+    const cols = [...baseColumns];
+    if (isTrésorier) {
+      cols.push({
+        key: 'actions',
+        header: 'Actions',
+        cell: (r: Paiement) => (
           <div className="flex flex-col sm:flex-row gap-2 items-center">
             {r.statut === 'En attente' && <ValidateButton id={r.id} />}
             <Button
@@ -113,10 +145,18 @@ export default function PaiementsPage() {
               Suppr.
             </Button>
           </div>
-        </PermissionGuard>
-      ),
-    },
-  ];
+        ),
+      });
+    }
+    return cols;
+  }, [isTrésorier, deletePaiement]);
+
+  const filterOptions = [
+    {key: 'all', label: 'Tous', count: counts.all},
+    {key: 'En attente', label: 'En attente', count: counts['En attente']},
+    {key: 'Valide', label: 'Validé', count: counts['Valide']},
+    {key: 'Rejete', label: 'Rejeté', count: counts['Rejete']},
+  ]
 
   return (
     <div className="space-y-6 pb-10">
@@ -136,22 +176,46 @@ export default function PaiementsPage() {
           <PermissionGuard allowedRoles={[ROLES.PR, ROLES.TR, ROLES.AD, ROLES.ME]}>
           <Button asChild variant="secondary" className="w-full sm:w-auto bg-[#10B981] hover:bg-slate-200 h-11">
             <Link to={ROUTES.PAIEMENT_WAVE}>
-              <CreditCard className="mr-2 h-4 w-4" /> Payer par Wave
+              <CreditCard className="mr-2 h-4 w-4" /> Effectuer un paiement
             </Link>
           </Button>
         </PermissionGuard>
         </div>
       </div>
 
-      {/* Barre de recherche */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Rechercher un membre..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-10 h-11 bg-white shadow-sm border-slate-200 focus:border-[#10B981] focus:ring-[#10B981]/20"
-        />
+      <div className="space-y-4">
+        {/* Barre de recherche */}
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher un membre..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-10 h-11 bg-white shadow-sm border-slate-200 focus:border-[#10B981] focus:ring-[#10B981]/20"
+          />
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {filterOptions.map(({ key, label, count }) => (
+            <button
+              key= {key}
+              onClick={() => setFilter(key as never)}
+              className={`relative px-1 py-1 rounded-full text-sm font-medium transition-all duration-200 
+                flex items-center gap-2 border 
+                ${filter === key
+                  ? 'bg-[#10B981] text-white border-[#10B981] shadow-sm'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300'}
+                  `}
+              >{label}
+              <span className={`text-xs px-2 py-1 rounded-full font-bold
+              ${filter === key ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}
+              `}
+              >
+                {count}
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* VUE MOBILE : Cartes (visible uniquement si sm:hidden) */}
@@ -202,7 +266,9 @@ export default function PaiementsPage() {
                       </p>
                     </div>
                   </div>
-                  <StatusBadge status={p.statut} label={p.statut_display} />
+                  <div className="flex-shrink-0 ml-2">
+                    <StatusBadge status={p.statut} label={p.statut_display} />
+                  </div>
                 </div>
 
                 {/* Corps de la carte : Montant et Type */}
@@ -219,7 +285,7 @@ export default function PaiementsPage() {
 
                 {/* Pied de la carte : Actions */}
                 <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row gap-2">
-                  <PermissionGuard allowedRoles={[ROLES.PR, ROLES.TR]}>
+                  <PermissionGuard allowedRoles={[ROLES.TR]}>
                     {p.statut === 'En attente' && (
                       <div className="w-full flex justify-center mb-2 sm:mb-0 sm:justify-start">
                          <ValidateButton id={p.id} />
