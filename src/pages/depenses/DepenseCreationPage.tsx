@@ -1,16 +1,14 @@
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
-import { z } from 'zod';
+// DepenseCreationForm.tsx
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ROUTES } from '@/constants/routes';
 import { useCreateDepense } from '@/hooks/useDepenses';
 import { parseDRFError } from '@/utils/errorParser';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import { z } from 'zod';
 
 const schema = z.object({
   montant: z.number().positive(),
@@ -20,8 +18,12 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>;
 
-export default function DepenseCreationPage() {
-  const navigate = useNavigate();
+interface DepenseCreationFormProps {
+  onSuccess: () => void;
+  onError: (error: unknown) => void;
+}
+
+export default function DepenseCreationPage({ onSuccess, onError }: DepenseCreationFormProps) {
   const createDepense = useCreateDepense();
   const {
     register,
@@ -32,43 +34,48 @@ export default function DepenseCreationPage() {
   const onSubmit = (data: FormData) => {
     createDepense.mutate(data, {
       onSuccess: () => {
-        toast.success('Dépense enregistrée');
-        void navigate(ROUTES.DEPENSES);
+        onSuccess();
       },
-      onError: (e) => parseDRFError(e).forEach((m) => toast.error(m)),
+      onError: (e) => {
+        parseDRFError(e).forEach((m) => toast.error(m));
+        onError(e);
+      },
     });
   };
 
   return (
-    <div className="mx-auto max-w-lg space-y-4">
-      <h2 className="text-2xl font-bold">Nouvelle dépense</h2>
-      <Card>
-        <CardContent className="pt-6">
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-1">
-              <Label>Montant (FCFA)</Label>
-              <Input type="number" {...register('montant', { valueAsNumber: true })} />
-              {errors.montant && (
-                <p className="text-sm text-destructive">{errors.montant.message}</p>
-              )}
-            </div>
-            <div className="space-y-1">
-              <Label>Motif</Label>
-              <Textarea {...register('motif')} />
-              {errors.motif && (
-                <p className="text-sm text-destructive">{errors.motif.message}</p>
-              )}
-            </div>
-            <div className="space-y-1">
-              <Label>Pièce justificative (URL)</Label>
-              <Input {...register('piece_justificative')} />
-            </div>
-            <Button type="submit" disabled={createDepense.isPending}>
-              Enregistrer
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <div className="space-y-1">
+        <Label>Montant (FCFA)</Label>
+        <Input 
+          type="number" 
+          step="0.01"
+          placeholder="Ex: 2000"
+          {...register('montant', { valueAsNumber: true })} 
+        />
+        {errors.montant && (
+          <p className="text-sm text-destructive">{errors.montant.message}</p>
+        )}
+      </div>
+      <div className="space-y-1">
+        <Label>Motif</Label>
+        <Textarea 
+          placeholder="Ex: Achat de fournitures de bureau" 
+          {...register('motif')} 
+        />
+        {errors.motif && (
+          <p className="text-sm text-destructive">{errors.motif.message}</p>
+        )}
+      </div>
+      <div className="space-y-1">
+        <Label>Pièce justificative (URL)</Label>
+        <Input {...register('piece_justificative')} />
+      </div>
+      <div className="flex justify-end gap-2">
+        <Button type="submit" disabled={createDepense.isPending}>
+          {createDepense.isPending ? 'Enregistrement...' : 'Enregistrer'}
+        </Button>
+      </div>
+    </form>
   );
 }
