@@ -94,7 +94,7 @@ export default function PaiementsPage() {
   const { user } = useAuth(); 
   const isTrésorier = user?.role === ROLES.TR;
 
-  const allResult  = data?.results ?? [];
+  const allResult  = useMemo(() => data?.results ?? [], [data?.results]);
   const counts = {
     all : allResult.length,
     'En attente' : allResult.filter((p) => isPending(p.statut)).length,

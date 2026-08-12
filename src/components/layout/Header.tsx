@@ -109,7 +109,7 @@ export const Header = () => {
             </button>
           </DropdownMenuTrigger>
 
-          <DropdownMenuContent align="end" className="w-56 bg-[#cddcf1]">
+          <DropdownMenuContent align="end" className="w-56 bg-white">
             {/* Identité complète */}
             <DropdownMenuLabel className="font-normal">
               <div className="flex items-center gap-3">
@@ -119,7 +119,7 @@ export const Header = () => {
                   {initiales}
                 </div>
                 <div className="flex flex-col min-w-0">
-                  <p className="text-sm font-semibold leading-none truncate text-white">
+                  <p className="text-sm font-semibold leading-none truncate text-gray-700">
                     {user.first_name} {user.last_name}
                   </p>
                   <span
